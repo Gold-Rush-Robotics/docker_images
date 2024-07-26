@@ -4,7 +4,9 @@ RUN apt-get update && \
     apt-get install -y curl \
     wget \
     locales \
-    tzdata
+    tzdata \
+    udev \
+    usbutils
 RUN wget https://apt.kitware.com/kitware-archive.sh &&\
 bash kitware-archive.sh
 ENV DEBIAN_FRONTEND=noninteractive
@@ -41,6 +43,8 @@ WORKDIR /home/user/zephyrproject/zephyr
 
 RUN west build -p always -b teensy40 samples/basic/blinky
 
+RUN curl -L http://www.pjrc.com/teensy/00-teensy.rules -o 00-teensy.rules
+
 RUN apt-get update && \
     apt-get install -y git \
     mingw-w64 \
@@ -54,3 +58,7 @@ RUN git clone https://github.com/PaulStoffregen/teensy_loader_cli.git
 WORKDIR /home/user/teensy_loader_cli
 
 RUN make
+
+ENV PATH="/home/user/teensy_loader_cli:${PATH}"
+
+WORKDIR /home/user/zephyrproject/zephyr

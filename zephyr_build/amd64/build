@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GITHUB_REGISTRY="ghcr.io/gold-rush-robotics"
-VERSION="2"
+VERSION="1_x86_64"
 IMAGE_NAME="zephyr-build:$VERSION"
 
 docker build -t $GITHUB_REGISTRY/$IMAGE_NAME --cache-from $GITHUB_REGISTRY/$IMAGE_NAME . 
