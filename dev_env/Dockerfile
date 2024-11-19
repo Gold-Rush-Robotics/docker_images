@@ -1,13 +1,4 @@
-ARG BASE_IMAGE=osrf/ros:humble-desktop
-FROM $BASE_IMAGE
-RUN mkdir -p /opt/install-scripts
-ARG INSTALL_COMMON="true"
-ARG INSTALL_DOCKER="true"
-ARG INSTALL_RTAB="true"
-
-######################
-# User configuration #
-######################
+FROM ros:jazzy-ros-base AS base
 
 ARG USERNAME=admin
 ARG USER_UID=1000
@@ -16,89 +7,113 @@ ARG USER_GID=1000
 # Install prerequisites
 RUN apt-get update && apt-get install -y \
         sudo \
-&& rm -rf /var/lib/apt/lists/* \
-&& apt-get clean
+        apt-utils \
+        openssh-client \
+        gnupg2 \
+        dirmngr \
+        iproute2 \
+        procps \
+        lsof \
+        htop \
+        net-tools \
+        psmisc \
+        curl \
+        tree \
+        wget \
+        rsync \
+        ca-certificates \
+        unzip \
+        bzip2 \
+        zip \
+        nano \
+        vim-tiny \
+        less \
+        jq \
+        lsb-release \
+        apt-transport-https \
+        dialog \
+        libc6 \
+        libgcc1 \
+        libkrb5-3 \
+        libgssapi-krb5-2 \
+        libicu-dev \
+        liblttng-ust1 \
+        libstdc++6 \
+        zlib1g \
+        locales \
+        sudo \
+        ncdu \
+        man-db \
+        strace \
+        manpages \
+        manpages-dev \
+        libnss3 \
+        init-system-helpers \
+        libssl-dev \
+        zsh \
+        git
+RUN locale-gen en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+
+RUN locale-gen en_US.UTF-8
 
 # Create the 'admin' user if not already exists
-RUN if [ ! $(getent passwd ${USERNAME}) ]; then \
-        groupadd --gid ${USER_GID} ${USERNAME} ; \
-        useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME} ; \
-    fi
+RUN useradd -m -s /bin/bash ${USERNAME} && \
+  echo '${USERNAME}} ALL=(ALL) NOPASSWD:ALL' >>/etc/sudoers
 
-# Update 'admin' user
-RUN echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
-    && chmod 0440 /etc/sudoers.d/${USERNAME} \
-    && adduser ${USERNAME} video && adduser ${USERNAME} sudo
+# RUN echo "source /etc/skel/.bashrc" >> /home/$USERNAME/.bashrc && \
+#     echo "source /etc/skel/.profile" >> /home/$USERNAME/.profile
 
-ENV USERNAME=${USERNAME}
-ENV USER_GID=${USER_GID}
-ENV USER_UID=${USER_UID}
+RUN chsh --shell /bin/zsh ${USERNAME}; \
+    git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git /home/${USERNAME}/.oh-my-zsh && \
+    cp /home/${USERNAME}/.oh-my-zsh/templates/zshrc.zsh-template /home/${USERNAME}/.zshrc && \
+    sed -i 's/ZSH_THEME=.*/ZSH_THEME="devcontainers"/' /home/${USERNAME}/.zshrc && \
+    echo "DISABLE_AUTO_UPDATE=true" >> /home/${USERNAME}/.zshrc && \
+    echo "DISABLE_UPDATE_PROMPT=true" >> /home/${USERNAME}/.zshrc
 
-################
-# Config Setup #
-################
+FROM base AS docker
 
-# Copy middleware profiles
-RUN mkdir -p /usr/local/share/middleware_profiles
-COPY config/*_profile.xml /usr/local/share/middleware_profiles/
-
-##################
-# Common Utility #
-##################
-
-# Copy and install common
-COPY install-scripts/install-common /opt/install-scripts/install-common
-RUN chmod +x /opt/install-scripts/install-common
-RUN /opt/install-scripts/install-common ${INSTALL_COMMON}
-
-##############
-# Docker CLI #
-##############
-
-# Copy and isntall docker
-COPY install-scripts/install-docker /opt/install-scripts/install-docker
-RUN chmod +x /opt/install-scripts/install-docker
-RUN /opt/install-scripts/install-docker ${INSTALL_DOCKER}
+RUN curl -fsSL --insecure https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+RUN echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends docker-ce-cli
 
 # Add docker group
 RUN groupadd --system docker
 RUN usermod -aG docker ${USERNAME}
 
-################
-# Install RTAB #
-################
-
-
-COPY install-scripts/install-rtab /opt/install-scripts/install-rtab
-RUN chmod +x /opt/install-scripts/install-rtab
-USER ${USERNAME}
-RUN sudo apt update && sudo apt-get install -y python3-pip
-RUN /opt/install-scripts/install-rtab ${INSTALL_RTAB}
-USER root
 
 ####################
 # Preload ROS Deps #
 ####################
 
-# Copy and install workspace rosdeps
-COPY install-scripts/install-rosdeps /opt/install-scripts/install-rosdeps
-RUN chmod +x /opt/install-scripts/install-rosdeps
-COPY src /tmp/src
-USER ${USERNAME}
-RUN /opt/install-scripts/install-rosdeps
-USER root
-RUN mkdir -p /opt/workspace
+# Install metapackage #
+RUN mkdir -p /tmp/workspace/src
+WORKDIR /tmp/workspace
+COPY metapackage /tmp/workspace/src/metapackage
+
+# Install ZED Msgs #
+RUN git clone https://github.com/stereolabs/zed-ros2-interfaces.git /tmp/workspace/src/zed_interfaces
+
+# Install Zenoh_rmw #
+RUN git clone https://github.com/ros2/rmw_zenoh.git /tmp/workspace/src/rmw_zenoh
+
+# Build Workspace #
+RUN apt-get update && rosdep update && rosdep install --from-paths /tmp/workspace/src --ignore-src -r -y
+RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --packages-select zed_msgs"
 
 #######################
 # Install Python deps #
 #######################
-RUN pip install rticonnextdds-connector \
-robotpy==2023.4.2.1 \
-robotpy[ctre] \
-robotpy[all] \
-robotpy[commands2] \
-robotpy[navx] \
-wpilib==2023.4.2.0 
+RUN apt-get update && apt-get install -y python3-pip
+COPY requirements.txt /tmp/workspace/requirements.txt
+# RUN pip3 install -r /tmp/workspace/requirements.txt
+
+
 
 ######################
 # Docker Permissions #
