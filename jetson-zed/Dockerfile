@@ -61,7 +61,8 @@ RUN wget https://github.com/ros/xacro/archive/refs/tags/${XACRO_VERSION}.tar.gz 
 
 # Check that all the dependencies are satisfied
 WORKDIR /root/ros2_ws
-RUN apt-get update -y --allow-unauthenticated || true && rosdep update && \
+RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
+apt-get update -y --allow-unauthenticated || true && rosdep update && \
   rosdep install --from-paths src --ignore-src -r -y && \
   rm -rf /var/lib/apt/lists/*
 
