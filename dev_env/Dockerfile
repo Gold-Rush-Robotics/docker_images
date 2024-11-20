@@ -1,4 +1,4 @@
-FROM ros:jazzy-ros-base AS base
+FROM ros:jazzy-ros-base
 
 ARG USERNAME=admin
 ARG USER_UID=1000
@@ -51,8 +51,11 @@ RUN apt-get update && apt-get install -y \
         init-system-helpers \
         libssl-dev \
         zsh \
-        git
-RUN locale-gen en_US.UTF-8 \
+        git \
+        python3-pip \
+        python3-poetry \
+        pipx
+  RUN locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -63,8 +66,8 @@ RUN locale-gen en_US.UTF-8
 RUN useradd -m -s /bin/bash ${USERNAME} && \
   echo '${USERNAME}} ALL=(ALL) NOPASSWD:ALL' >>/etc/sudoers
 
-# RUN echo "source /etc/skel/.bashrc" >> /home/$USERNAME/.bashrc && \
-#     echo "source /etc/skel/.profile" >> /home/$USERNAME/.profile
+RUN echo "source /etc/skel/.bashrc" >> /home/${USERNAME}/.bashrc && \
+    echo "source /etc/skel/.profile" >> /home/${USERNAME}/.profile
 
 RUN chsh --shell /bin/zsh ${USERNAME}; \
     git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git /home/${USERNAME}/.oh-my-zsh && \
@@ -73,7 +76,7 @@ RUN chsh --shell /bin/zsh ${USERNAME}; \
     echo "DISABLE_AUTO_UPDATE=true" >> /home/${USERNAME}/.zshrc && \
     echo "DISABLE_UPDATE_PROMPT=true" >> /home/${USERNAME}/.zshrc
 
-FROM base AS docker
+
 
 RUN curl -fsSL --insecure https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 RUN echo \
@@ -90,7 +93,6 @@ RUN usermod -aG docker ${USERNAME}
 ####################
 # Preload ROS Deps #
 ####################
-
 # Install metapackage #
 RUN mkdir -p /tmp/workspace/src
 WORKDIR /tmp/workspace
@@ -106,11 +108,22 @@ RUN git clone https://github.com/ros2/rmw_zenoh.git /tmp/workspace/src/rmw_zenoh
 RUN apt-get update && rosdep update && rosdep install --from-paths /tmp/workspace/src --ignore-src -r -y
 RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --packages-select zed_msgs"
 
+# Install R2S #
+WORKDIR /tmp/
+RUN git clone https://github.com/mjcarroll/r2s.git
+WORKDIR /tmp/r2s
+RUN poetry install
+RUN echo 'alias r2s="poetry run r2s"' >> ~/.zshrc
+
+# Install robot-folders #
+RUN pipx install robot-folders
+RUN echo "source ${HOME}/.local/share/pipx/venvs/robot-folders/bin/rob_folders_source.sh" >> ~/.bashrc
+
+
 #######################
 # Install Python deps #
 #######################
-RUN apt-get update && apt-get install -y python3-pip
-COPY requirements.txt /tmp/workspace/requirements.txt
+
 # RUN pip3 install -r /tmp/workspace/requirements.txt
 
 
