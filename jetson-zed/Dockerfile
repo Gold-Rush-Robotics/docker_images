@@ -1,85 +1,100 @@
-ARG IMAGE_NAME=dustynv/ros:humble-ros-base-l4t-r36.3.0
+#https://ngc.nvidia.com/catalog/containers/nvidia:l4t-base
 
+ARG IMAGE_NAME=cuda:12.2-r36.3.0
 FROM ${IMAGE_NAME}
-
+ARG L4T_MAJOR_VERSION=36
+ARG L4T_MINOR_VERSION=3
+ARG L4T_PATCH_VERSION=0
 ARG ZED_SDK_MAJOR=4
 ARG ZED_SDK_MINOR=2
-ARG JETPACK_MAJOR=6
-ARG JETPACK_MINOR=0
-ARG L4T_MAJOR=36
-ARG L4T_MINOR=3
 
-ARG ROS2_DIST=humble       # ROS2 distribution
+ARG ROS_DISTRO=humble       # ROS2 distribution
+ARG UBUNTU_CODENAME=jammy
 
-# ZED ROS2 Wrapper dependencies version
-ARG XACRO_VERSION=2.0.8
-ARG DIAGNOSTICS_VERSION=3.0.0
-ARG AMENT_LINT_VERSION=0.12.4
 
+#This environment variable is needed to use the streaming features on Jetson inside a container
+ENV LOGNAME root
 ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update -y || true ; apt-get install --no-install-recommends lsb-release wget less zstd udev sudo apt-transport-https git -y && \
+    echo "# R${L4T_MAJOR_VERSION} (release), REVISION: ${L4T_MINOR_VERSION}.${L4T_PATCH_VERSION}" > /etc/nv_tegra_release ; \
+    wget -q --no-check-certificate -O ZED_SDK_Linux.run https://download.stereolabs.com/zedsdk/${ZED_SDK_MAJOR}.${ZED_SDK_MINOR}/l4t${L4T_MAJOR_VERSION}.${L4T_MINOR_VERSION}/jetsons && \
+    chmod +x ZED_SDK_Linux.run ; ./ZED_SDK_Linux.run silent skip_tools skip_drivers && \
+    rm -rf /usr/local/zed/resources/* \
+    rm -rf ZED_SDK_Linux.run && \
+    rm -rf /var/lib/apt/lists/*
 
-# Enable required NVIDIA drivers
-#ENV NVIDIA_DRIVER_CAPABILITIES \
-#  ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}compute,video,utility
+# ZED Python API
+RUN apt-get update -y || true ; apt-get install --no-install-recommends python3 python3-pip python3-dev python3-setuptools build-essential -y && \ 
+    wget download.stereolabs.com/zedsdk/pyzed -O /usr/local/zed/get_python_api.py && \
+    python3 /usr/local/zed/get_python_api.py && \
+    python3 -m pip install cython wheel && \
+    python3 -m pip install numpy pyopengl *.whl && \
+    apt-get remove --purge build-essential -y && apt-get autoremove -y && \
+    rm *.whl ; rm -rf /var/lib/apt/lists/*
+############ Install ROS2 ############
 
-# Disable apt-get warnings
-
-RUN apt-get update --allow-unauthenticated || true && apt-get install --allow-unauthenticated -y --no-install-recommends apt-utils dialog
-
-ENV TZ=Europe/Paris
-
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \ 
-  apt-get install --allow-unauthenticated --yes lsb-release wget less udev sudo build-essential cmake python3 python3-dev python3-pip python3-wheel git jq libpq-dev zstd usbutils && \    
+# Set and Check Locale
+RUN apt-get update || true && \
+  apt-get install --no-install-recommends -y locales && \
+  locale-gen en_US en_US.UTF-8 && \
+  update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && \
+  export LANG=en_US.UTF-8 && \
+  locale  # verify settings && \
   rm -rf /var/lib/apt/lists/*
 
-# Install the ZED SDK
-RUN echo "# R${L4T_MAJOR} (release), REVISION: ${L4T_MINOR}" > /etc/nv_tegra_release && \
-  apt-get update -y --allow-unauthenticated || true && \
-  apt-get install -y --allow-unauthenticated --no-install-recommends zstd wget less cmake curl gnupg2 \
-  build-essential python3 python3-pip python3-dev python3-setuptools libusb-1.0-0-dev -y && \
-  pip install protobuf && \
-  wget -q --no-check-certificate -O ZED_SDK_Linux_JP.run \
-  https://download.stereolabs.com/zedsdk/${ZED_SDK_MAJOR}.${ZED_SDK_MINOR}/l4t${L4T_MAJOR}.${L4T_MINOR}/jetsons && \
-  chmod +x ZED_SDK_Linux_JP.run ; ./ZED_SDK_Linux_JP.run silent skip_tools && \
-  rm -rf /usr/local/zed/resources/* && \
-  rm -rf ZED_SDK_Linux_JP.run && \
+# Setup Sources
+RUN apt-get update || true && \
+  apt-get install --no-install-recommends -y software-properties-common && \
+  add-apt-repository universe && \
+  apt-get install -y curl && \
+  curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
   rm -rf /var/lib/apt/lists/*
 
-# Install the ZED ROS2 Wrapper
-ENV ROS_DISTRO ${ROS2_DIST}
+# Install ROS 2 Base packages and Python dependencies
+RUN apt-get update || true && \
+  apt-get install --no-install-recommends -y \
+  ros-${ROS_DISTRO}-ros-base \
+  ros-${ROS_DISTRO}-ament-cmake-clang-format \
+  ros-${ROS_DISTRO}-image-transport \
+  ros-${ROS_DISTRO}-image-transport-plugins \
+  ros-${ROS_DISTRO}-diagnostic-updater \
+  ros-${ROS_DISTRO}-xacro \
+  python3-flake8-docstrings \
+  python3-pip \
+  python3-pytest-cov \
+  ros-dev-tools && \
+  pip3 install \
+  argcomplete \
+  numpy \
+  empy \
+  lark && \
+  rm -rf /var/lib/apt/lists/*
 
-# Copy the sources in the Docker image
+# Initialize rosdep
+RUN rosdep init && rosdep update
+
+# Install ZED ROS2 wrapper #
+RUN mkdir -p /root/ros2_ws/src
 WORKDIR /root/ros2_ws/src
-RUN git clone --recursive https://github.com/stereolabs/zed-ros2-wrapper.git
-
-# Install missing dependencies
-WORKDIR /root/ros2_ws/src
-RUN wget https://github.com/ros/xacro/archive/refs/tags/${XACRO_VERSION}.tar.gz -O - | tar -xvz && mv xacro-${XACRO_VERSION} xacro && \
-  wget https://github.com/ros/diagnostics/archive/refs/tags/${DIAGNOSTICS_VERSION}.tar.gz -O - | tar -xvz && mv diagnostics-${DIAGNOSTICS_VERSION} diagnostics && \
-  wget https://github.com/ament/ament_lint/archive/refs/tags/${AMENT_LINT_VERSION}.tar.gz -O - | tar -xvz && mv ament_lint-${AMENT_LINT_VERSION} ament-lint
-  
-
-# Check that all the dependencies are satisfied
+RUN git clone https://github.com/stereolabs/zed-ros2-wrapper.git
 WORKDIR /root/ros2_ws
-RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
-apt-get update -y --allow-unauthenticated || true && rosdep update && \
-  rosdep install --from-paths src --ignore-src -r -y && \
-  rm -rf /var/lib/apt/lists/*
 
-# Build the dependencies and the ZED ROS2 Wrapper
-RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
+RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash && \
+  apt-get update -y || true && rosdep update && \
+  rosdep install --from-paths src --ignore-src -r -y && \
   colcon build --parallel-workers $(nproc) --symlink-install \
   --event-handlers console_direct+ --base-paths src \
   --cmake-args ' -DCMAKE_BUILD_TYPE=Release' \
   ' -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs' \
-  ' -DCMAKE_CXX_FLAGS="-Wl,--allow-shlib-undefined"' \
-  ' --no-warn-unused-cli' "
+  ' -DCMAKE_CXX_FLAGS="-Wl,--allow-shlib-undefined"' " && \
+  rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root/ros2_ws
 
-# Copy middleware profiles
-RUN mkdir -p /usr/local/share/middleware_profiles
-COPY config/*_profile.xml /usr/local/share/middleware_profiles/
+
+#This symbolic link is needed to use the streaming features on Jetson inside a container
+RUN ln -sf /usr/lib/aarch64-linux-gnu/tegra/libv4l2.so.0 /usr/lib/aarch64-linux-gnu/libv4l2.so
 
 # Setup environment variables 
 COPY ros_entrypoint_jetson.sh /sbin/ros_entrypoint.sh

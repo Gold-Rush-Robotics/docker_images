@@ -4,7 +4,7 @@ GITHUB_REGISTRY="ghcr.io/gold-rush-robotics"
 VERSION="2"
 IMAGE_NAME="dev_env:$VERSION"
 
-docker buildx build --platform linux/amd64,linux/arm64 -t $GITHUB_REGISTRY/$IMAGE_NAME --cache-from $GITHUB_REGISTRY/$IMAGE_NAME . 
+docker buildx build --platform linux/amd64,linux/arm64 -t $GITHUB_REGISTRY/$IMAGE_NAME --cache-from $GITHUB_REGISTRY/$IMAGE_NAME --load . 
 
 echo "Build finished"
 
