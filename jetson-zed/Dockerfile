@@ -10,6 +10,7 @@ ARG ZED_SDK_MINOR=2
 
 ARG ROS_DISTRO=humble       # ROS2 distribution
 ARG UBUNTU_CODENAME=jammy
+ENV CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
 
 
 #This environment variable is needed to use the streaming features on Jetson inside a container
@@ -79,16 +80,22 @@ RUN mkdir -p /root/ros2_ws/src
 WORKDIR /root/ros2_ws/src
 RUN git clone https://github.com/stereolabs/zed-ros2-wrapper.git
 WORKDIR /root/ros2_ws
-
-RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash && \
-  apt-get update -y || true && rosdep update && \
+RUN apt-get update -y || true && rosdep update && \
   rosdep install --from-paths src --ignore-src -r -y && \
+  rm -rf /var/lib/apt/lists/*
+
+# Install cython
+RUN python3 -m pip install --upgrade cython
+
+# Build the dependencies and the ZED ROS2 Wrapper
+RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
   colcon build --parallel-workers $(nproc) --symlink-install \
   --event-handlers console_direct+ --base-paths src \
   --cmake-args ' -DCMAKE_BUILD_TYPE=Release' \
   ' -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs' \
-  ' -DCMAKE_CXX_FLAGS="-Wl,--allow-shlib-undefined"' " && \
-  rm -rf /var/lib/apt/lists/*
+  ' -DCMAKE_CXX_FLAGS="-Wl,--allow-shlib-undefined"' \
+  ' --no-warn-unused-cli' "
+
 
 WORKDIR /root/ros2_ws
 
