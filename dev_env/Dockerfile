@@ -1,6 +1,6 @@
 FROM ros:jazzy-ros-base
 
-ARG USERNAME=admin
+ARG USERNAME=ubuntu
 ARG USER_UID=1000
 ARG USER_GID=1000
 
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
         apt-utils \
         openssh-client \
         gnupg2 \
-        dirmngr \
+        dirmngr \ 
         iproute2 \
         procps \
         lsof \
@@ -63,8 +63,20 @@ RUN apt-get update && apt-get install -y \
 RUN locale-gen en_US.UTF-8
 
 # Create the 'admin' user if not already exists
-RUN useradd -m -s /bin/bash ${USERNAME} && \
-  echo '${USERNAME}} ALL=(ALL) NOPASSWD:ALL' >>/etc/sudoers
+RUN if [ ! $(getent passwd ${USERNAME}) ]; then \
+        groupadd --gid ${USER_GID} ${USERNAME} ; \
+        useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME} ; \
+    fi
+
+# Update 'admin' user
+RUN echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
+    && chmod 0440 /etc/sudoers.d/${USERNAME} \
+    && adduser ${USERNAME} video && adduser ${USERNAME} sudo
+
+ENV USERNAME=${USERNAME}
+ENV USER_GID=${USER_GID}
+ENV USER_UID=${USER_UID}
+
 
 RUN echo "source /etc/skel/.bashrc" >> /home/${USERNAME}/.bashrc && \
     echo "source /etc/skel/.profile" >> /home/${USERNAME}/.profile
@@ -145,5 +157,7 @@ exec \"\$@\"" > /usr/local/share/docker-init.sh \
 # Setting the ENTRYPOINT to docker-init.sh will configure non-root access to
 # the Docker socket if "overrideCommand": false is set in devcontainer.json.
 # The script will also execute CMD if you need to alter startup behaviors.
+USER ${USERNAME}
+
 ENTRYPOINT [ "/usr/local/share/docker-;init.sh" ]
 CMD [ "sleep", "infinity" ]

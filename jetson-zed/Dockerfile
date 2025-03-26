@@ -1,6 +1,6 @@
 #https://ngc.nvidia.com/catalog/containers/nvidia:l4t-base
 
-ARG IMAGE_NAME=cuda:12.2-r36.3.0
+ARG IMAGE_NAME=nvcr.io/nvidia/l4t-cuda:12.2.2-devel-arm64-ubuntu22.04   
 FROM ${IMAGE_NAME}
 ARG L4T_MAJOR_VERSION=36
 ARG L4T_MINOR_VERSION=3
