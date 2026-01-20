@@ -54,7 +54,9 @@ RUN apt-get update && apt-get install -y \
         git \
         python3-pip \
         python3-poetry \
-        pipx
+        pipx \
+        libserial-dev \
+        librange-v3-dev
   RUN locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
