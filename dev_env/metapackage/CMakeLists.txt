@@ -19,6 +19,12 @@ find_package(joint_state_controller REQUIRED)
 find_package(robot_state_publisher REQUIRED)
 find_package(joint_state_publisher_gui REQUIRED)
 find_package(tf_transformations REQUIRED) 
+find_package(xacro REQUIRED) 
+find_package(rviz2 REQUIRED) 
+find_package(feetech_ros2_driver REQUIRED) 
+
+
+
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
