@@ -23,6 +23,10 @@ find_package(tf2_ros REQUIRED)
 find_package(rosbridge_suite REQUIRED)
 find_package(xacro REQUIRED)
 find_package(rviz2 REQUIRED)
+find_package(feetech_ros2_driver REQUIRED) 
+
+
+
 
 # uncomment the following section in order to fill in
 # further dependencies manually.

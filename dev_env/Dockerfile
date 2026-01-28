@@ -56,8 +56,9 @@ RUN apt-get update && apt-get install -y \
         python3-poetry \
         pipx \
         libxml2 \
-        libxml2-dev
-        # libogre-1.12-dev
+        libxml2-dev \
+        libserial-dev \
+        librange-v3-dev
   RUN locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean

@@ -1,9 +1,39 @@
 #!/bin/bash
 
 GITHUB_REGISTRY="ghcr.io/gold-rush-robotics"
-VERSION="4"
+VERSION="9"
 IMAGE_NAME="dev_env:$VERSION"
+# Check system architecture
+ARCH=$(uname -m)
+if [ "$ARCH" == "x86_64" ]; then
+    docker buildx build --platform=linux/amd64 --push -t $GITHUB_REGISTRY/$IMAGE_NAME-amd64 --provenance=false .
 
-docker buildx build --platform=linux/amd64,linux/arm64 --push -t $GITHUB_REGISTRY/$IMAGE_NAME .
+
+else if [ "$ARCH" == "aarch64" ]; then
+    docker buildx build --platform=linux/arm64 --push -t $GITHUB_REGISTRY/$IMAGE_NAME-arm64 --provenance=false .
+
+    exit 1
+fi
 
 echo "Build finished"
+
+# Check if manifest exists for both architectures
+docker manifest inspect $GITHUB_REGISTRY/$IMAGE_NAME-amd64 > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "Manifest for amd64 does not exist. Waiting for it to be available to create multi-arch manifest."
+    exit 1
+fi
+docker manifest inspect $GITHUB_REGISTRY/$IMAGE_NAME-arm64 > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "Manifest for arm64 does not exist. Waiting for it to be available to create multi-arch manifest."
+    exit 1
+fi
+
+# Create and push multi-arch manifest
+docker manifest create $GITHUB_REGISTRY/$IMAGE_NAME \
+    $GITHUB_REGISTRY/$IMAGE_NAME-amd64 \
+    $GITHUB_REGISTRY/$IMAGE_NAME-arm64
+
+docker manifest push $GITHUB_REGISTRY/$IMAGE_NAME
+
+
