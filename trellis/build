@@ -1,0 +1,7 @@
+GITHUB_REGISTRY="ghcr.io/gold-rush-robotics"
+VERSION="1"
+IMAGE_NAME="trellis:$VERSION"
+
+docker buildx build --platform=linux/amd64 --push -t $GITHUB_REGISTRY/$IMAGE_NAME .
+
+echo "Build finished"

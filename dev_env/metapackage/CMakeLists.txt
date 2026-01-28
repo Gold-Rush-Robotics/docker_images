@@ -18,7 +18,11 @@ find_package(controller_manager REQUIRED)
 find_package(joint_state_controller REQUIRED)
 find_package(robot_state_publisher REQUIRED)
 find_package(joint_state_publisher_gui REQUIRED)
-find_package(tf_transformations REQUIRED) 
+find_package(tf_transformations REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(rosbridge_suite REQUIRED)
+find_package(xacro REQUIRED)
+find_package(rviz2 REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.

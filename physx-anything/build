@@ -1,0 +1,7 @@
+GITHUB_REGISTRY="ghcr.io/gold-rush-robotics"
+VERSION="1"
+IMAGE_NAME="physx-anything:$VERSION"
+
+docker buildx build --platform=linux/amd64 --load -t $GITHUB_REGISTRY/$IMAGE_NAME .
+
+echo "Build finished"
