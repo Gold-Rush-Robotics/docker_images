@@ -51,12 +51,15 @@ RUN apt-get install --no-install-recommends --yes > /dev/null \
     file \
     make \
     gcc \
-    gcc-multilib \
-    g++-multilib \
     libsdl2-dev \
-    libmagic1 \
-    && rm -rf /var/lib/apt/lists/*
+    libmagic1
 
+# Install g++-multilib if architecture is amd64
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+    apt-get install --no-install-recommends --yes > /dev/null g++-multilib gcc-multilib; \
+    fi
+
+RUN rm -rf /var/lib/apt/lists/*
 
 # install colcon
 RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
