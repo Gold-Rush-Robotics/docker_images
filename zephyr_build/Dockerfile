@@ -84,12 +84,12 @@ RUN west zephyr-export
 RUN pip install -r /home/user/zephyrproject/zephyr/scripts/requirements.txt
 
 WORKDIR /home/user
-RUN wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.8/zephyr-sdk-0.16.8_linux-x86_64.tar.xz && \
-wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.8/sha256.sum | shasum --check --ignore-missing
+RUN wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.17.4/zephyr-sdk-0.17.4_linux-x86_64.tar.xz && \
+wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.17.4/sha256.sum | shasum --check --ignore-missing
 
-RUN tar xvf zephyr-sdk-0.16.8_linux-x86_64.tar.xz
+RUN tar xvf zephyr-sdk-0.17.4_linux-x86_64.tar.xz
 
-WORKDIR  /home/user/zephyr-sdk-0.16.8
+WORKDIR  /home/user/zephyr-sdk-0.17.4
     
 # RUN ls -la && chmod +x setup.sh && bash setup.sh
 
