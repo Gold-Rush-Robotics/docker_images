@@ -5,13 +5,13 @@ ARG IMAGE_NAME=nvcr.io/nvidia/l4t-jetpack:r36.4.0
 FROM ${IMAGE_NAME}
 
 ARG ZED_SDK_MAJOR=5
-ARG ZED_SDK_MINOR=1
+ARG ZED_SDK_MINOR=2
 ARG ZED_SDK_PATCH=0
 ARG L4T_MAJOR=36
 ARG L4T_MINOR=4
 
 # ROS2 distribution
-ARG ROS2_DIST=humble
+ARG ROS2_DIST=jazzy
 
 # ZED ROS2 Wrapper dependencies version
 ARG XACRO_VERSION=2.0.8
@@ -52,11 +52,11 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C1CF6E31E6
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
-ENV ROS_DISTRO humble
+ENV ROS_DISTRO jazzy
 
 # install ros2 packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-humble-ros-core=0.10.0-1* \
+    ros-jazzy-ros-core \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -84,7 +84,7 @@ RUN colcon mixin add default \
 
 # install ros2 packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-humble-ros-base=0.10.0-1* \
+    ros-jazzy-ros-base=0.10.0-1* \
     && rm -rf /var/lib/apt/lists/*
 
 # ZED SDK link

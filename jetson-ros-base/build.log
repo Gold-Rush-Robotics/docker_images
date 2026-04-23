@@ -1,0 +1,150 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 14.88kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for nvcr.io/nvidia/l4t-jetpack:r36.4.0
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 DONE 0.0s
+
+#5 [ 1/23] FROM nvcr.io/nvidia/l4t-jetpack:r36.4.0@sha256:34ccf0f3b63c6da9eee45f2e79de9bf7fdf3beda9abfd72bbf285ae9d40bb673
+#5 resolve nvcr.io/nvidia/l4t-jetpack:r36.4.0@sha256:34ccf0f3b63c6da9eee45f2e79de9bf7fdf3beda9abfd72bbf285ae9d40bb673 0.0s done
+#5 DONE 0.0s
+
+#6 [auth] gold-rush-robotics/jetson-ros-base:pull token for ghcr.io
+#6 DONE 0.0s
+
+#7 importing cache manifest from ghcr.io/gold-rush-robotics/jetson-ros-base:jazzy-36.4.7
+#7 ERROR: failed to configure registry cache importer: ghcr.io/gold-rush-robotics/jetson-ros-base:jazzy-36.4.7: not found
+
+#8 [ 5/23] RUN apt-get update && apt-get install -y --no-install-recommends         python3-colcon-common-extensions         python3-colcon-mixin         python3-rosdep         python3-vcstool         python3-flake8         python3-flake8-blind-except         python3-flake8-builtins         python3-flake8-class-newline         python3-flake8-comprehensions         python3-flake8-deprecated         python3-flake8-docstrings         python3-flake8-import-order         python3-flake8-quotes         python3-pytest         python3-pytest-cov         python3-pytest-repeat         python3-pytest-rerunfailures         python3-argcomplete     && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#9 [ 6/23] RUN python3 -m pip install --no-cache-dir -U         "setuptools==68.2.2"         "pip"         "empy==3.3.4"         "lark==1.1.9"         "catkin_pkg"         "numpy==1.26.4"
+#9 CACHED
+
+#10 [16/23] WORKDIR /opt/ros_overlay_src
+#10 CACHED
+
+#11 [ 3/23] RUN apt-get update && apt-get install -q -y --no-install-recommends         ca-certificates         curl         wget         gnupg2         lsb-release         software-properties-common         build-essential         cmake         git         sudo         less         udev         usbutils         jq         zstd         zip         unzip         pkg-config         libssl-dev         libusb-1.0-0-dev         zlib1g-dev         python3         python3-dev         python3-pip         python3-wheel         python3-setuptools     && add-apt-repository universe -y     && rm -rf /var/lib/apt/lists/*
+#11 CACHED
+
+#12 [ 7/23] RUN apt-get update && apt-get install -y --no-install-recommends         libacl1-dev         libasio-dev         libtinyxml2-dev         libcunit1-dev         libbullet-dev         libeigen3-dev         libyaml-cpp-dev         libssl-dev         libcurl4-openssl-dev         libzstd-dev         libpcl-dev         libboost-all-dev         qtbase5-dev         qtbase5-dev-tools         qtdeclarative5-dev         libqt5svg5-dev         libfreetype-dev         liblog4cxx-dev         liborocos-kdl-dev         libxaw7-dev         libgl1-mesa-dev         libglu1-mesa-dev         libx11-dev         libxext-dev         uncrustify         cppcheck         graphviz         libspdlog-dev         libfmt-dev         libbenchmark-dev         google-mock         libgmock-dev         libgtest-dev     && rm -rf /var/lib/apt/lists/*
+#12 CACHED
+
+#13 [14/23] RUN python3 -m pip install --no-cache-dir         opencv-python-headless &&     python3 -m pip install --no-cache-dir --ignore-installed sympy &&     python3 -m pip install --no-cache-dir         --index-url https://pypi.jetson-ai-lab.io/jp6/cu126         torch torchvision &&     python3 -m pip install --no-cache-dir         ultralytics         transforms3d &&     python3 -m pip install --no-cache-dir --force-reinstall         "numpy==1.26.4"
+#13 CACHED
+
+#14 [12/23] RUN mkdir -p /opt/ros/jazzy &&     MAKEFLAGS="-j4"     colcon build         --merge-install         --install-base /opt/ros/jazzy         --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF         --parallel-workers 4 &&     rm -rf /tmp/ros2_src
+#14 CACHED
+
+#15 [17/23] RUN mkdir -p src &&     printf '%s\n'         'repositories:'         '  navigation2:'         '    type: git'         '    url: https://github.com/ros-navigation/navigation2.git'         '    version: jazzy'         '  BehaviorTree.CPP:'         '    type: git'         '    url: https://github.com/BehaviorTree/BehaviorTree.CPP.git'         '    version: 4.6.2'         '  behaviortree_ros2:'         '    type: git'         '    url: https://github.com/BehaviorTree/BehaviorTree.ROS2.git'         '    version: humble'         '  ros2_control:'         '    type: git'         '    url: https://github.com/ros-controls/ros2_control.git'         '    version: jazzy'         '  ros2_control_cmake:'         '    type: git'         '    url: https://github.com/ros-controls/ros2_control_cmake.git'         '    version: master'         '  ros2_controllers:'         '    type: git'         '    url: https://github.com/ros-controls/ros2_controllers.git'         '    version: jazzy'         '  control_msgs:'         '    type: git'         '    url: https://github.com/ros-controls/control_msgs.git'         '    version: jazzy'         '  realtime_tools:'         '    type: git'         '    url: https://github.com/ros-controls/realtime_tools.git'         '    version: jazzy'         '  control_toolbox:'         '    type: git'         '    url: https://github.com/ros-controls/control_toolbox.git'         '    version: jazzy'         '  vision_opencv:'         '    type: git'         '    url: https://github.com/ros-perception/vision_opencv.git'         '    version: rolling'         '  xacro:'         '    type: git'         '    url: https://github.com/ros/xacro.git'         '    version: ros2'         '  robot_localization:'         '    type: git'         '    url: https://github.com/cra-ros-pkg/robot_localization.git'         '    version: jazzy-devel'         '  diagnostics:'         '    type: git'         '    url: https://github.com/ros/diagnostics.git'         '    version: ros2-jazzy'         '  angles:'         '    type: git'         '    url: https://github.com/ros/angles.git'         '    version: ros2'         '  nmea_msgs:'         '    type: git'         '    url: https://github.com/ros-drivers/nmea_msgs.git'         '    version: ros2'         '  geographic_info:'         '    type: git'         '    url: https://github.com/ros-geographic-info/geographic_info.git'         '    version: ros2'         '  usb_cam:'         '    type: git'         '    url: https://github.com/ros-drivers/usb_cam.git'         '    version: main'         '  twist_mux:'         '    type: git'         '    url: https://github.com/ros-teleop/twist_mux.git'         '    version: rolling'         '  twist_mux_msgs:'         '    type: git'         '    url: https://github.com/ros-teleop/twist_mux_msgs.git'         '    version: master'         '  generate_parameter_library:'         '    type: git'         '    url: https://github.com/PickNikRobotics/generate_parameter_library.git'         '    version: main'         '  backward_ros:'         '    type: git'         '    url: https://github.com/pal-robotics/backward_ros.git'         '    version: foxy-devel'         '  bond_core:'         '    type: git'         '    url: https://github.com/ros/bond_core.git'         '    version: ros2'         '  pal_statistics:'         '    type: git'         '    url: https://github.com/pal-robotics/pal_statistics.git'         '    version: humble-devel'         '  RSL:'         '    type: git'         '    url: https://github.com/PickNikRobotics/RSL.git'         '    version: main'         '  sdformat_urdf:'         '    type: git'         '    url: https://github.com/ros/sdformat_urdf.git'         '    version: rolling'         '  filters:'         '    type: git'         '    url: https://github.com/ros/filters.git'         '    version: ros2'         '  image_transport_plugins:'         '    type: git'         '    url: https://github.com/ros-perception/image_transport_plugins.git'         '    version: rolling'         '  kinematics_interface:'         '    type: git'         '    url: https://github.com/ros-controls/kinematics_interface.git'         '    version: jazzy'         '  tf_transformations:'         '    type: git'         '    url: https://github.com/DLu/tf_transformations.git'         '    version: main'         > nav2.repos
+#15 CACHED
+
+#16 [ 4/23] RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key         -o /usr/share/keyrings/ros-archive-keyring.gpg &&     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu jammy main"         > /etc/apt/sources.list.d/ros2.list
+#16 CACHED
+
+#17 [ 2/23] RUN echo "Europe/Paris" > /etc/timezone &&     ln -snf /usr/share/zoneinfo/Europe/Paris /etc/localtime &&     apt-get update &&     apt-get install -q -y --no-install-recommends tzdata locales &&     locale-gen en_US en_US.UTF-8 &&     update-locale LC_ALL=C.UTF-8 LANG=C.UTF-8 &&     rm -rf /var/lib/apt/lists/*
+#17 CACHED
+
+#18 [18/23] RUN vcs import src < nav2.repos &&     for pkg in nav2_system_tests nav2_loopback_sim nav2_minimal_tb3_sim; do         find src -type d -name "$pkg" -exec touch {}/COLCON_IGNORE ; ;     done
+#18 CACHED
+
+#19 [13/23] RUN colcon mixin add default         https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml &&     colcon mixin update &&     colcon metadata add default         https://raw.githubusercontent.com/colcon/colcon-metadata-repository/master/index.yaml &&     colcon metadata update
+#19 CACHED
+
+#20 [10/23] RUN mkdir -p src &&     curl -sSL https://raw.githubusercontent.com/ros2/ros2/jazzy/ros2.repos         -o ros2.repos &&     vcs import src < ros2.repos
+#20 CACHED
+
+#21 [15/23] RUN apt-get update && apt-get install -y --no-install-recommends         libopenblas0         libopenblas-dev         libcap-dev         libompl-dev         python3-pyqt5     && curl -sSL -o /tmp/cuda-keyring.deb         https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.1-1_all.deb &&     dpkg -i /tmp/cuda-keyring.deb &&     rm -f /tmp/cuda-keyring.deb &&     apt-get update && apt-get install -y --no-install-recommends         libcudss0-cuda-12     && rm -rf /var/lib/apt/lists/* &&     echo "/usr/lib/aarch64-linux-gnu/libcudss/12" > /etc/ld.so.conf.d/cudss.conf &&     ldconfig
+#21 CACHED
+
+#22 [11/23] RUN apt-get update &&     rosdep install --from-paths src --ignore-src -y --rosdistro jazzy         --skip-keys "fastcdr rti-connext-dds-6.0.1 urdfdom_headers rmw_connextdds                      ignition-cmake2 ignition-math6 python3-catkin-pkg-modules                      python3-lark-parser python3-empy"     || true &&     rm -rf /var/lib/apt/lists/*
+#22 CACHED
+
+#23 [ 8/23] RUN rosdep init && rosdep update --rosdistro jazzy
+#23 CACHED
+
+#24 [ 9/23] WORKDIR /tmp/ros2_src
+#24 CACHED
+
+#4 [internal] load build context
+#4 transferring context: 46B done
+#4 DONE 0.0s
+
+#25 [19/23] RUN apt-get update &&     . /opt/ros/jazzy/setup.sh &&     rosdep install --from-paths src --ignore-src -y --rosdistro jazzy         --skip-keys "fastcdr rti-connext-dds-6.0.1 urdfdom_headers rmw_connextdds                      ignition-cmake2 ignition-math6 python3-catkin-pkg-modules                      python3-lark-parser python3-empy                      behaviortree_cpp behaviortree_cpp_v3                      gz-math7 gz-math-vendor gz-common5 gz-plugin2                      gz-sim8 gz-transport13 ros_gz_bridge ros_gz_sim                      nav2_minimal_tb3_sim tf_transformations"     || true &&     rm -rf /var/lib/apt/lists/*
+#25 CACHED
+
+#26 [20/23] RUN . /opt/ros/jazzy/setup.sh &&     MAKEFLAGS="-j4"     colcon build         --merge-install         --install-base /opt/ros/jazzy         --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF         --parallel-workers 4 &&     rm -rf /opt/ros_overlay_src
+#26 1.671 Starting >>> diagnostic_updater
+#26 1.687 Starting >>> generate_parameter_library_py
+#26 1.703 Starting >>> rsl
+#26 1.717 Starting >>> backward_ros
+#26 3.694 --- stderr: rsl
+#26 3.694 CMake Error at CMakeLists.txt:9 (find_package):
+#26 3.694   By not providing "Findtcb_span.cmake" in CMAKE_MODULE_PATH this project has
+#26 3.694   asked CMake to find a package configuration file provided by "tcb_span",
+#26 3.694   but CMake did not find one.
+#26 3.694 
+#26 3.694   Could not find a package configuration file provided by "tcb_span" with any
+#26 3.694   of the following names:
+#26 3.694 
+#26 3.694     tcb_spanConfig.cmake
+#26 3.694     tcb_span-config.cmake
+#26 3.694 
+#26 3.694   Add the installation prefix of "tcb_span" to CMAKE_PREFIX_PATH or set
+#26 3.694   "tcb_span_DIR" to a directory containing one of the above files.  If
+#26 3.694   "tcb_span" provides a separate development package or SDK, be sure it has
+#26 3.694   been installed.
+#26 3.694 
+#26 3.694 
+#26 3.694 ---
+#26 3.694 Failed   <<< rsl [1.99s, exited with code 1]
+#26 3.902 Aborted  <<< generate_parameter_library_py [2.22s]
+#26 3.931 Aborted  <<< diagnostic_updater [2.26s]
+#26 5.507 Aborted  <<< backward_ros [3.79s]
+#26 5.584 
+#26 5.584 Summary: 0 packages finished [4.69s]
+#26 5.584   1 package failed: rsl
+#26 5.584   3 packages aborted: backward_ros diagnostic_updater generate_parameter_library_py
+#26 5.584   2 packages had stderr output: backward_ros rsl
+#26 5.584   135 packages not processed
+#26 ERROR: process "/bin/sh -c . /opt/ros/${ROS_DISTRO}/setup.sh &&     MAKEFLAGS=\"-j${NAV2_COLCON_PARALLEL}\"     colcon build         --merge-install         --install-base /opt/ros/${ROS_DISTRO}         --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF         --parallel-workers ${NAV2_COLCON_PARALLEL} &&     rm -rf /opt/ros_overlay_src" did not complete successfully: exit code: 1
+------
+ > importing cache manifest from ghcr.io/gold-rush-robotics/jetson-ros-base:jazzy-36.4.7:
+------
+------
+ > [20/23] RUN . /opt/ros/jazzy/setup.sh &&     MAKEFLAGS="-j4"     colcon build         --merge-install         --install-base /opt/ros/jazzy         --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF         --parallel-workers 4 &&     rm -rf /opt/ros_overlay_src:
+3.694 Failed   <<< rsl [1.99s, exited with code 1]
+3.902 Aborted  <<< generate_parameter_library_py [2.22s]
+3.931 Aborted  <<< diagnostic_updater [2.26s]
+5.507 Aborted  <<< backward_ros [3.79s]
+5.584 
+5.584 Summary: 0 packages finished [4.69s]
+5.584   1 package failed: rsl
+5.584   3 packages aborted: backward_ros diagnostic_updater generate_parameter_library_py
+5.584   2 packages had stderr output: backward_ros rsl
+5.584   135 packages not processed
+------
+Dockerfile:381
+--------------------
+ 380 |     ARG NAV2_COLCON_PARALLEL=4
+ 381 | >>> RUN . /opt/ros/${ROS_DISTRO}/setup.sh && \
+ 382 | >>>     MAKEFLAGS="-j${NAV2_COLCON_PARALLEL}" \
+ 383 | >>>     colcon build \
+ 384 | >>>         --merge-install \
+ 385 | >>>         --install-base /opt/ros/${ROS_DISTRO} \
+ 386 | >>>         --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
+ 387 | >>>         --parallel-workers ${NAV2_COLCON_PARALLEL} && \
+ 388 | >>>     rm -rf /opt/ros_overlay_src
+ 389 |     
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c . /opt/ros/${ROS_DISTRO}/setup.sh &&     MAKEFLAGS=\"-j${NAV2_COLCON_PARALLEL}\"     colcon build         --merge-install         --install-base /opt/ros/${ROS_DISTRO}         --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF         --parallel-workers ${NAV2_COLCON_PARALLEL} &&     rm -rf /opt/ros_overlay_src" did not complete successfully: exit code: 1
+EXIT=1
