@@ -1,0 +1,115 @@
+FROM dustynv/ros:jazzy-ros-base-r36.4.0-cu128-24.04
+
+RUN rm -f /etc/apt/sources.list.d/ros2.list && \
+    rm -f /usr/share/keyrings/ros-archive-keyring.gpg && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends gnupg && \
+    gpg --no-default-keyring \
+        --keyring /tmp/ros-keyring.gpg \
+        --keyserver hkp://keyserver.ubuntu.com:80 \
+        --recv-keys F42ED6FBAB17C654 && \
+    gpg --no-default-keyring \
+        --keyring /tmp/ros-keyring.gpg \
+        --export F42ED6FBAB17C654 \
+        | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    rm -f /tmp/ros-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+        > /etc/apt/sources.list.d/ros2.list && \
+    apt-get update && \
+    rm -rf /var/lib/apt/lists/* && \
+    \
+    # Allow dpkg to overwrite files already owned by dustynv's custom opencv-dev 4.11.0
+    echo 'Dpkg::Options { "--force-overwrite"; };' \
+        > /etc/apt/apt.conf.d/99force-overwrite && \
+    \
+    # Reinitialize rosdep with fresh sources
+    rm -f /etc/ros/rosdep/sources.list.d/20-default.list && \
+    rosdep init && \
+    rosdep update && \
+    \
+    # Remove the force-overwrite option so it doesn't affect future installs
+    rm -f /etc/apt/apt.conf.d/99force-overwrite
+    # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 1. Strip dustynv's custom OpenCV BEFORE any pip installs
+# ---------------------------------------------------------------------------
+RUN dpkg --remove --force-depends \
+        opencv-dev \
+        opencv-libs \
+        opencv-python \
+        opencv-scripts \
+        opencv-main \
+        opencv-licenses && \
+    rm -rf \
+        /lib/libopencv* \
+        /usr/local/include/opencv4 \
+        /usr/local/lib/python3.12/dist-packages/cv2 && \
+    ldconfig
+
+# ---------------------------------------------------------------------------
+# 2. Nuke ALL pip config locations the base image may have left behind,
+#    then write a clean one. The missing '=' on extra-index-url was causing
+#    pip to ignore it and fall back to the dead jetson index.
+# ---------------------------------------------------------------------------
+# Override the dead Jetson pip index baked into the base image's environment
+ENV PIP_INDEX_URL=https://pypi.org/simple \
+    PIP_EXTRA_INDEX_URL=""
+
+RUN rm -f /etc/pip.conf \
+          /root/.config/pip/pip.conf \
+          /root/.pip/pip.conf && \
+    \
+    python3 -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128 && \
+    python3 -m pip install --no-cache-dir \
+        opencv-python-headless && \
+    python3 -m pip install --no-cache-dir --ignore-installed \
+        sympy && \
+    python3 -m pip install --no-cache-dir --no-deps \
+        "ultralytics==8.3.0" \
+        transforms3d && \
+    python3 -m pip install --no-cache-dir \
+        "numpy==1.26.4"
+# ---------------------------------------------------------------------------
+# Runtime libs required by the Jetson PyTorch wheel:
+#   - libopenblas0: dynamic BLAS
+#   - libcudss0-cuda-12: NVIDIA cuDSS (not shipped with JetPack by default).
+#     Installs under /usr/lib/aarch64-linux-gnu/libcudss/12/ so add an
+#     ld.so.conf entry.
+# ---------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libopenblas0 \
+        libopenblas-dev \
+        libcap-dev \
+        libompl-dev \
+        python3-pyqt5 \
+    && curl -sSL -o /tmp/cuda-keyring.deb \
+        https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.1-1_all.deb && \
+    dpkg -i /tmp/cuda-keyring.deb && \
+    rm -f /tmp/cuda-keyring.deb && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        libcudss0-cuda-12 \
+    && rm -rf /var/lib/apt/lists/* && \
+    echo "/usr/lib/aarch64-linux-gnu/libcudss/12" > /etc/ld.so.conf.d/cudss.conf && \
+    ldconfig
+    
+
+WORKDIR /opt
+RUN git clone \
+		--branch isaac_sim_junk \
+		--single-branch \
+		--recurse-submodules \
+		https://github.com/Gold-Rush-Robotics/IGVC_robot_2026.git && \
+	git -C /opt/IGVC_robot_2026 submodule update --init --recursive
+
+WORKDIR /opt/IGVC_robot_2026
+RUN apt-get update && \
+	if [ -d src ]; then \
+		rosdep install --from-paths src --ignore-src -r -y --rosdistro jazzy; \
+	else \
+		rosdep install --from-paths . --ignore-src -r -y --rosdistro jazzy; \
+	fi && \
+	rm -rf /var/lib/apt/lists/* && \
+    rm -rf /opt/IGVC_robot_2026/
+
+

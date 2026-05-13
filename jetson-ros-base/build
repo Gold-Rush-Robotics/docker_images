@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GITHUB_REGISTRY="ghcr.io/gold-rush-robotics"
-VERSION="jazzy-36.4.7"
+VERSION="jazzy-36.4.7-2"
 IMAGE_NAME="jetson-ros-base:$VERSION"
 
 docker build -t $GITHUB_REGISTRY/$IMAGE_NAME --cache-from $GITHUB_REGISTRY/$IMAGE_NAME . 

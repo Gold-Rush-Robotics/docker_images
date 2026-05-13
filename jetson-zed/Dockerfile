@@ -5,13 +5,13 @@ ARG IMAGE_NAME=nvcr.io/nvidia/l4t-jetpack:r36.4.0
 FROM ${IMAGE_NAME}
 
 ARG ZED_SDK_MAJOR=5
-ARG ZED_SDK_MINOR=2
+ARG ZED_SDK_MINOR=3
 ARG ZED_SDK_PATCH=0
 ARG L4T_MAJOR=36
 ARG L4T_MINOR=4
 
 # ROS2 distribution
-ARG ROS2_DIST=jazzy
+ARG ROS2_DIST=humble
 
 # ZED ROS2 Wrapper dependencies version
 ARG XACRO_VERSION=2.0.8
@@ -38,25 +38,27 @@ RUN echo 'Etc/UTC' > /etc/timezone && \
 
 # install packages
 RUN apt-get update && apt-get install -q -y --no-install-recommends \
+    ca-certificates \
+    curl \
     dirmngr \
     gnupg2 \
     && rm -rf /var/lib/apt/lists/*
 
 # setup sources.list
-RUN echo "deb http://packages.ros.org/ros2/ubuntu jammy main" > /etc/apt/sources.list.d/ros2-latest.list
-
-# setup keys
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+    -o /usr/share/keyrings/ros-archive-keyring.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu jammy main" \
+    > /etc/apt/sources.list.d/ros2.list
 
 # setup environment
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
-ENV ROS_DISTRO jazzy
+ENV ROS_DISTRO humble
 
 # install ros2 packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-jazzy-ros-core \
+    ros-humble-ros-core=0.10.0-1* \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -84,7 +86,7 @@ RUN colcon mixin add default \
 
 # install ros2 packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-jazzy-ros-base=0.10.0-1* \
+    ros-humble-ros-base=0.10.0-1* \
     && rm -rf /var/lib/apt/lists/*
 
 # ZED SDK link
@@ -99,9 +101,7 @@ RUN if [ "$(curl -I "${ZED_SDK_URL}" -o /dev/null -s -w '%{http_code}\n' | head 
     fi
 
 # Disable apt-get warnings
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654 && \
-  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA && \
-  apt-get update && apt-get install -y --no-install-recommends apt-utils dialog 
+RUN apt-get update && apt-get install -y --no-install-recommends apt-utils dialog 
 
 ENV TZ=Europe/Paris
 
@@ -169,8 +169,8 @@ RUN python3 -m pip install --upgrade cython
 
 # Build the dependencies and the ZED ROS2 Wrapper
 WORKDIR /root/ros2_ws
-  RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \
-    colcon build --symlink-install --cmake-args=-DCMAKE_BUILD_TYPE=Release --parallel-workers $(nproc) "
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \
+    colcon build --symlink-install --packages-skip zed_debug --cmake-args=-DCMAKE_BUILD_TYPE=Release --parallel-workers $(nproc) "
 
 WORKDIR /root/ros2_ws
 
