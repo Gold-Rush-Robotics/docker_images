@@ -1,4 +1,31 @@
+# syntax=docker/dockerfile:1
+
+# Add visibility for multi-platform builds
+# Declare global arguments
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+# ROS2 build stage from ROS2 Jazzy base image
 FROM ros:jazzy-ros-base
+
+# Redeclare arguments within ROS2 build stage
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+# Display architecture information
+RUN echo "======================================"
+RUN echo "Build platform:   ${BUILDPLATFORM}"
+RUN echo "Target platform:  ${TARGETPLATFORM}"
+RUN echo "Target OS:        ${TARGETOS}"
+RUN echo "Target arch:      ${TARGETARCH}"
+RUN echo "Target variant:   ${TARGETVARIANT}"
+RUN echo "======================================"
 
 ARG USERNAME=ubuntu
 ARG USER_UID=1000
@@ -10,7 +37,7 @@ RUN apt-get update && apt-get install -y \
         apt-utils \
         openssh-client \
         gnupg2 \
-        dirmngr \ 
+        dirmngr \
         iproute2 \
         procps \
         lsof \
@@ -118,8 +145,10 @@ COPY metapackage /tmp/workspace/src/metapackage
 RUN git clone https://github.com/stereolabs/zed-ros2-interfaces.git /tmp/workspace/src/zed_interfaces
 
 # Install Zenoh_rmw #
-RUN git clone https://github.com/ros2/rmw_zenoh.git /tmp/workspace/src/rmw_zenoh
-
+RUN git clone --branch jazzy --depth=1 \
+    https://github.com/ros2/rmw_zenoh.git \
+    /tmp/workspace/src/rmw_zenoh
+    
 # Build Workspace #
 RUN apt-get update && rosdep update && rosdep install --from-paths /tmp/workspace/src --ignore-src -r -y
 RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --packages-select zed_msgs"
@@ -163,5 +192,5 @@ exec \"\$@\"" > /usr/local/share/docker-init.sh \
 # The script will also execute CMD if you need to alter startup behaviors.
 USER ${USERNAME}
 
-ENTRYPOINT [ "/usr/local/share/docker-;init.sh" ]
+ENTRYPOINT [ "/usr/local/share/docker-init.sh" ]
 CMD [ "sleep", "infinity" ]
