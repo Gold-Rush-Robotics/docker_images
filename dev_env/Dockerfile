@@ -178,8 +178,8 @@ RUN echo "source ${HOME}/.local/share/pipx/venvs/robot-folders/bin/rob_folders_s
 ######################
 RUN echo "#!/bin/sh\n\
 sudoIf() { if [ \"\$(id -u)\" -ne 0 ]; then sudo \"\$@\"; else \"\$@\"; fi }\n\
-SOCKET_GID=\$(stat -c '%g' /var/run/docker.sock) \n\
-if [ \"${SOCKET_GID}\" != '0' ]; then\n\
+SOCKET_GID=\$(stat -c '%g' /var/run/docker-host.sock) \n\
+if [ \"\${SOCKET_GID}\" != '0' ]; then\n\
     if [ \"\$(cat /etc/group | grep :\${SOCKET_GID}:)\" = '' ]; then sudoIf groupadd --gid \${SOCKET_GID} docker-host; fi \n\
     if [ \"\$(id ${USERNAME} | grep -E \"groups=.*(=|,)\${SOCKET_GID}\(\")\" = '' ]; then sudoIf usermod -aG \${SOCKET_GID} ${USERNAME}; fi\n\
 fi\n\
