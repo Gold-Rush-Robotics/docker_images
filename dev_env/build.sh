@@ -47,6 +47,12 @@ else
 
     docker run --privileged --rm tonistiigi/binfmt --install arm64
 
+    docker buildx rm "$BUILDER_NAME"
+    docker buildx create \
+        --name "$BUILDER_NAME" \
+        --driver docker-container \
+        --use
+        
     echo
     echo "Reinitializing Buildx builder..."
     BUILDER_INFO=$(docker buildx inspect --bootstrap)
