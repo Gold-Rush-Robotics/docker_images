@@ -1,4 +1,31 @@
+# syntax=docker/dockerfile:1
+
+# Add visibility for multi-platform builds
+# Declare global arguments
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+# ROS2 build stage from ROS2 Jazzy base image
 FROM ros:jazzy-ros-base
+
+# Redeclare arguments within ROS2 build stage
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+# Display architecture information
+RUN echo "======================================"
+RUN echo "Build platform:   ${BUILDPLATFORM}"
+RUN echo "Target platform:  ${TARGETPLATFORM}"
+RUN echo "Target OS:        ${TARGETOS}"
+RUN echo "Target arch:      ${TARGETARCH}"
+RUN echo "Target variant:   ${TARGETVARIANT}"
+RUN echo "======================================"
 
 ARG USERNAME=ubuntu
 ARG USER_UID=1000
@@ -10,7 +37,7 @@ RUN apt-get update && apt-get install -y \
         apt-utils \
         openssh-client \
         gnupg2 \
-        dirmngr \ 
+        dirmngr \
         iproute2 \
         procps \
         lsof \
@@ -58,7 +85,8 @@ RUN apt-get update && apt-get install -y \
         libxml2 \
         libxml2-dev \
         libserial-dev \
-        librange-v3-dev
+        librange-v3-dev \
+        socat
   RUN locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
@@ -118,8 +146,10 @@ COPY metapackage /tmp/workspace/src/metapackage
 RUN git clone https://github.com/stereolabs/zed-ros2-interfaces.git /tmp/workspace/src/zed_interfaces
 
 # Install Zenoh_rmw #
-RUN git clone https://github.com/ros2/rmw_zenoh.git /tmp/workspace/src/rmw_zenoh
-
+RUN git clone --branch jazzy --depth=1 \
+    https://github.com/ros2/rmw_zenoh.git \
+    /tmp/workspace/src/rmw_zenoh
+    
 # Build Workspace #
 RUN apt-get update && rosdep update && rosdep install --from-paths /tmp/workspace/src --ignore-src -r -y
 RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --packages-select zed_msgs"
@@ -147,13 +177,36 @@ RUN echo "source ${HOME}/.local/share/pipx/venvs/robot-folders/bin/rob_folders_s
 ######################
 # Docker Permissions #
 ######################
+RUN touch /var/run/docker-host.sock
 RUN echo "#!/bin/sh\n\
 sudoIf() { if [ \"\$(id -u)\" -ne 0 ]; then sudo \"\$@\"; else \"\$@\"; fi }\n\
-SOCKET_GID=\$(stat -c '%g' /var/run/docker.sock) \n\
-if [ \"${SOCKET_GID}\" != '0' ]; then\n\
-    if [ \"\$(cat /etc/group | grep :\${SOCKET_GID}:)\" = '' ]; then sudoIf groupadd --gid \${SOCKET_GID} docker-host; fi \n\
-    if [ \"\$(id ${USERNAME} | grep -E \"groups=.*(=|,)\${SOCKET_GID}\(\")\" = '' ]; then sudoIf usermod -aG \${SOCKET_GID} ${USERNAME}; fi\n\
+\n\
+SOURCE_SOCKET=/var/run/docker-host.sock\n\
+TARGET_SOCKET=/var/run/docker.sock\n\
+\n\
+# Determine the GID of the host Docker socket. \n\
+SOCKET_GID=\$(stat -c '%g' \"\${SOURCE_SOCKET}\") \n\
+\n\
+# Match container docker group GID to non-root host socket GID, if available.\n\
+DOCKER_GID=\$(getent group docker | cut -d: -f3) \n\
+if [ \"\${SOCKET_GID}\" != '0' ] && [ \"\${SOCKET_GID}\" != \"\${DOCKER_GID}\" ] && ! grep -qE \".+:x:\${SOCKET_GID}:\" /etc/group ; then\n\
+        sudoIf groupmod --gid \"\${SOCKET_GID}\" docker\n\
 fi\n\
+\n\
+# If Docker group GID now matches socket GID, expose the host socket at the standard Docker CLI socket path.\n\
+DOCKER_GID=\$(getent group docker | cut -d: -f3)\n\
+\n\
+if [ \"\${SOCKET_GID}\" != '0' ] && [ \"\${SOCKET_GID}\" = \"\${DOCKER_GID}\" ]; then\n\
+    if [ ! -e \"\${TARGET_SOCKET}\" ]; then\n\
+       sudoIf ln -s \"\${SOURCE_SOCKET}\" \"\${TARGET_SOCKET}\"\n\
+    fi\n\
+else\n\
+    # If host socket is root-owned or GID conflicts with existing group,\n\
+    # proxy it through a container-owned socket with the correct permissions.\n\
+    sudoIf rm -f \"\${TARGET_SOCKET}\"\n\
+    sudoIf socat UNIX-LISTEN:\"\${TARGET_SOCKET}\",fork,mode=660,user=${USERNAME} UNIX-CONNECT:\"\${SOURCE_SOCKET}\" &\n\
+fi\n\
+\n\
 exec \"\$@\"" > /usr/local/share/docker-init.sh \
 && chmod +x /usr/local/share/docker-init.sh
 
@@ -163,5 +216,5 @@ exec \"\$@\"" > /usr/local/share/docker-init.sh \
 # The script will also execute CMD if you need to alter startup behaviors.
 USER ${USERNAME}
 
-ENTRYPOINT [ "/usr/local/share/docker-;init.sh" ]
+ENTRYPOINT [ "/usr/local/share/docker-init.sh" ]
 CMD [ "sleep", "infinity" ]
