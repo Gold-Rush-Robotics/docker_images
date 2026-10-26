@@ -8,8 +8,8 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-# ROS2 build stage from ROS2 Jazzy base image
-FROM ros:jazzy-ros-base
+# ROS2 build stage from ROS2 Lyrical base image
+FROM ros:lyrical-ros-base
 
 # Redeclare arguments within ROS2 build stage
 ARG BUILDPLATFORM
@@ -79,20 +79,19 @@ RUN apt-get update && apt-get install -y \
         libssl-dev \
         zsh \
         git \
+        build-essential \
         python3-pip \
-        python3-poetry \
+        python3-dev \
         pipx \
-        libxml2 \
+        libxml2-16 \
         libxml2-dev \
+        libxml2-utils \
         libserial-dev \
         librange-v3-dev \
         socat
-  RUN locale-gen en_US.UTF-8 \
+RUN locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
-
-
-RUN locale-gen en_US.UTF-8
 
 # Create the 'admin' user if not already exists
 RUN if [ ! $(getent passwd ${USERNAME}) ]; then \
@@ -146,20 +145,16 @@ COPY metapackage /tmp/workspace/src/metapackage
 RUN git clone https://github.com/stereolabs/zed-ros2-interfaces.git /tmp/workspace/src/zed_interfaces
 
 # Install Zenoh_rmw #
-RUN git clone --branch jazzy --depth=1 \
+RUN git clone --branch lyrical --depth=1 \
     https://github.com/ros2/rmw_zenoh.git \
     /tmp/workspace/src/rmw_zenoh
     
 # Build Workspace #
-RUN apt-get update && rosdep update && rosdep install --from-paths /tmp/workspace/src --ignore-src -r -y
+RUN apt-get update && rosdep update && rosdep install --from-paths /tmp/workspace/src --ignore-src -r -y --skip-keys="feetech_ros2_driver"
 RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --packages-select zed_msgs"
 
 # Install R2S #
-WORKDIR /tmp/
-RUN git clone https://github.com/mjcarroll/r2s.git
-WORKDIR /tmp/r2s
-RUN poetry install
-RUN echo 'alias r2s="poetry run r2s"' >> ~/.zshrc
+RUN pipx install git+https://github.com/mjcarroll/r2s.git
 
 # Install robot-folders #
 RUN pipx install robot-folders
