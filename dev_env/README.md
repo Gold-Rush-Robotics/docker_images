@@ -165,15 +165,13 @@ The image version is defined in `docker-bake.hcl`.
 The current version is:
 
 ```text
-9
+10
 ```
 
 A different version can be supplied without modifying the Bake file:
 
 ```bash
-./build.sh \
-    --set VERSION=10 \
-    --push
+VERSION=10 ./build.sh --push
 ```
 
 This publishes:
@@ -187,9 +185,7 @@ ghcr.io/gold-rush-robotics/dev_env:10
 An alternate image name can be supplied when testing changes:
 
 ```bash
-./build.sh \
-    --set IMAGE=ghcr.io/gold-rush-robotics/dev_env-test \
-    --push
+IMAGE=ghcr.io/gold-rush-robotics/dev_env-test ./build.sh --push
 ```
 
 This allows changes to be tested without replacing the primary development environment image.
